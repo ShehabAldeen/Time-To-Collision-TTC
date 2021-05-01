@@ -1,5 +1,5 @@
 # Time-To-Collision-TTC-
-Calculating the time to collision based on a late fusion of a lidar points and camera images
+Estimating the time to collision based on a late fusion of a lidar points and camera images
 
 ## Dependencies for Running Locally
 * cmake >= 2.8
