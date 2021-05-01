@@ -132,7 +132,7 @@ int main(int argc, const char *argv[])
         bVis = true;
         if(bVis)
         {
-            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 20.0), cv::Size(2000, 2000), true);
+            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 20.0), cv::Size(1000, 1000), true);
         }
         bVis = false;
 
@@ -231,7 +231,6 @@ int main(int argc, const char *argv[])
             cout << "#8 : TRACK 3D OBJECT BOUNDING BOXES done" << endl;
             cout << bbBestMatches.size() << endl;
             
-            continue;
 
             /* COMPUTE TTC ON OBJECT IN FRONT */
 
@@ -264,7 +263,7 @@ int main(int argc, const char *argv[])
                     double ttcLidar; 
                     computeTTCLidar(prevBB->lidarPoints, currBB->lidarPoints, sensorFrameRate, ttcLidar);
                     //// EOF STUDENT ASSIGNMENT
-
+                    cout << ttcLidar << endl;
                     //// STUDENT ASSIGNMENT
                     //// TASK FP.3 -> assign enclosed keypoint matches to bounding box (implement -> clusterKptMatchesWithROI)
                     //// TASK FP.4 -> compute time-to-collision based on camera (implement -> computeTTCCamera)

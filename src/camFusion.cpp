@@ -153,9 +153,76 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
 void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
                      std::vector<LidarPoint> &lidarPointsCurr, double frameRate, double &TTC)
 {
-    // ...
+    
+    filterLidarPoints(lidarPointsPrev);
+    filterLidarPoints(lidarPointsCurr);
+
+    double dT = 1/frameRate; // time between two measurements in seconds
+    double laneWidth = 4.0;  // assumed width of the ego lane
+
+    // find closest distance to Lidar points within ego lane
+    double minXPrev = 1e9, minXCurr = 1e9;
+    for (auto it = lidarPointsPrev.begin(); it != lidarPointsPrev.end(); ++it)
+    {
+        if (abs(it->y) <= laneWidth / 2.0)
+        {
+            minXPrev = minXPrev > it->x ? it->x : minXPrev;
+        }
+    }
+
+    for (auto it = lidarPointsCurr.begin(); it != lidarPointsCurr.end(); ++it)
+    {
+        if (abs(it->y) <= laneWidth / 2.0)
+        {
+            minXCurr = minXCurr > it->x ? it->x : minXCurr;
+        }    
+    }
+    // compute TTC from both measurements
+    TTC = minXCurr * dT / (minXPrev - minXCurr);
 }
 
+
+
+// filters lidar points from outliers using euclidean clustering algorithm
+void filterLidarPoints (std::vector<LidarPoint> &lidarPoints)
+{
+    KdTree* tree = new KdTree; //instantiate tree object
+    //fill the tree with points
+    std::vector<std::vector<float>> points {0};
+    for (int i=0; i<lidarPoints.size(); i++)
+    {
+        std::vector<float> point {lidarPoints[i].x,lidarPoints[i].y};
+        points.push_back(point);
+        tree->insert(point,i);
+    }
+    std::vector<std::vector<int>> clusters = euclideanCluster(points, tree, 0.1);
+    cout << "number of clusters: " << clusters.size() << endl;
+
+    int largeClusterIndex {-1};
+    int clusterSizeCompare {0};
+    for (int i = 0; i < clusters.size(); i++)
+    {
+        if(clusters[i].size() > clusterSizeCompare)
+        {
+            clusterSizeCompare = clusters[i].size();
+            largeClusterIndex = i;
+        }
+        
+    }
+    cout << "size of larger cluster" << "is: " << clusters[largeClusterIndex].size() <<endl;
+
+    std::vector<LidarPoint> cluster;
+    for (int index : clusters[largeClusterIndex])
+    {
+        LidarPoint l;
+        l.r = lidarPoints[index].r;
+        l.x = lidarPoints[index].x;
+        l.r = lidarPoints[index].y;
+        l.z = lidarPoints[index].z;
+        cluster.push_back(l);
+    }
+    lidarPoints = cluster;
+}
 
 void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame)
 {
@@ -174,7 +241,7 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
             for (cv::DMatch match: matches)
             {
                 //check if the two bounding boxes has the samme keypoint
-                if (prevFbb.roi.contains(prevFrame.keypoints[match.trainIdx].pt) && currFbb.roi.contains(currFrame.keypoints[match.queryIdx].pt))
+                if (prevFbb.roi.contains(prevFrame.keypoints[match.queryIdx].pt) && currFbb.roi.contains(currFrame.keypoints[match.trainIdx].pt))
                 {
                     kpNum +=1; // increase keypoint counter
                 }
@@ -192,3 +259,42 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
         bbBestMatches.insert(pair<int, int>(prevFbb.boxID,matchID));// inster the match with highest number of keypoints correspondence
     }// end of the outer loop
 }
+
+void clusterHelper(int indice, const std::vector<std::vector<float>> points, std::vector<int>& cluster, std::vector<bool>& processed, KdTree* tree, float distanceTol)
+{
+	processed[indice] = true;
+	cluster.push_back(indice);
+
+	std::vector<int> nearest = tree->search(points[indice],distanceTol);
+
+	for(int id: nearest)
+	{
+		if(!processed[id])
+			clusterHelper(id, points, cluster, processed, tree, distanceTol);
+	}
+}
+
+std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
+{
+
+	std::vector<std::vector<int>> clusters;
+
+	std::vector<bool> processed(points.size(),false);
+
+	int i = 0;
+	while(i < points.size())
+	{
+		if(processed[i])
+		{
+			i ++;
+			continue;
+		}
+
+		std::vector<int> cluster;
+		clusterHelper(i, points, cluster, processed, tree, distanceTol);
+		clusters.push_back(cluster);
+	}
+ 
+	return clusters;
+}
+
