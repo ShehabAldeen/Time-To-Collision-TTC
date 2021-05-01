@@ -174,7 +174,7 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
             for (cv::DMatch match: matches)
             {
                 //check if the two bounding boxes has the samme keypoint
-                if (prevFbb.roi.contains(prevFrame.keypoints[match.trainIdx].pt) && currFbb.roi.contains(currFrame.keypoints[match.queryIdx].pt))
+                if (prevFbb.roi.contains(prevFrame.keypoints[match.queryIdx].pt) && currFbb.roi.contains(currFrame.keypoints[match.trainIdx].pt))
                 {
                     kpNum +=1; // increase keypoint counter
                 }
