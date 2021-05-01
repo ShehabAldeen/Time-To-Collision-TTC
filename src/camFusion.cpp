@@ -159,5 +159,36 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
 
 void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame)
 {
-    // ...
+    //iterate overall bounding boxes from previous frame
+    for( BoundingBox prevFbb : prevFrame.boundingBoxes)
+    {   
+        int kpNum = 0;
+        int prevKpNum = 0;
+        int matchID = -1;
+
+        //iterate overall bounding boxes from current frame
+        for ( BoundingBox currFbb : currFrame.boundingBoxes)
+        {   
+            kpNum = 0;
+            // itertating over all matches
+            for (cv::DMatch match: matches)
+            {
+                //check if the two bounding boxes has the samme keypoint
+                if (prevFbb.roi.contains(prevFrame.keypoints[match.trainIdx].pt) && currFbb.roi.contains(currFrame.keypoints[match.queryIdx].pt))
+                {
+                    kpNum +=1; // increase keypoint counter
+                }
+            }
+            //check if this current frame bounding box has higher number of correspondence
+            if (kpNum > prevKpNum)
+            {
+                matchID = currFbb.boxID;
+                prevKpNum = kpNum;
+            }
+            
+        }// end of the inner loop
+
+
+        bbBestMatches.insert(pair<int, int>(prevFbb.boxID,matchID));// inster the match with highest number of keypoints correspondence
+    }// end of the outer loop
 }
