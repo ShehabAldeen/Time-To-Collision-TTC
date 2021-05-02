@@ -21,5 +21,5 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
                      std::vector<LidarPoint> &lidarPointsCurr, double frameRate, double &TTC);                  
 std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol);
 void clusterHelper(int indice, const std::vector<std::vector<float>> points, std::vector<int>& cluster, std::vector<bool>& processed, KdTree* tree, float distanceTol);
-void filterLidarPoints (std::vector<LidarPoint> &lidarPoints);
+void filterLidarPoints (std::vector<LidarPoint> &lidarPoints, float disThreshhold);
 #endif /* camFusion_hpp */
